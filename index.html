@@ -39,10 +39,61 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="visualizers/base-visualizer.js"></script>
-    <script src="visualizers/rose-visualizer.js"></script>
-    <script src="visualizers/sphere-visualizer.js"></script>
-    <script src="app.js"></script>
+    <script>
+        // Try to load Three.js from multiple sources
+        function loadThreeJS() {
+            const sources = [
+                'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+                'https://unpkg.com/three@0.128.0/build/three.min.js',
+                'libs/three.min.js'
+            ];
+            
+            function trySource(index) {
+                if (index >= sources.length) {
+                    console.warn('Could not load Three.js from any source, using fallback');
+                    loadApp();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = sources[index];
+                script.onload = loadApp;
+                script.onerror = () => trySource(index + 1);
+                document.head.appendChild(script);
+            }
+            
+            trySource(0);
+        }
+        
+        function loadApp() {
+            // Load application scripts in order synchronously
+            const scripts = [
+                'visualizers/base-visualizer.js',
+                'visualizers/rose-visualizer.js', 
+                'visualizers/sphere-visualizer.js',
+                'app.js'
+            ];
+            
+            function loadScript(index) {
+                if (index >= scripts.length) {
+                    console.log('All scripts loaded successfully');
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = scripts[index];
+                script.onload = () => loadScript(index + 1);
+                script.onerror = () => {
+                    console.error('Failed to load:', scripts[index]);
+                    loadScript(index + 1); // Continue even if one fails
+                };
+                document.head.appendChild(script);
+            }
+            
+            loadScript(0);
+        }
+        
+        loadThreeJS();
+    </script>
 </body>
 </html>

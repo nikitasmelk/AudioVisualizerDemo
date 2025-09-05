@@ -34,13 +34,22 @@ class BaseVisualizer {
             this.analyser.fftSize = this.fftSize;
             this.analyser.smoothingTimeConstant = this.smoothingTimeConstant;
             
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: true, 
-                video: false 
-            });
-            
-            const source = this.audioContext.createMediaStreamSource(stream);
-            source.connect(this.analyser);
+            try {
+                // Try to get microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true, 
+                    video: false 
+                });
+                
+                const source = this.audioContext.createMediaStreamSource(stream);
+                source.connect(this.analyser);
+                this.usingMicrophone = true;
+            } catch (micError) {
+                console.warn('Microphone access denied, using demo mode:', micError.message);
+                // Create demo mode with oscillator
+                this.createDemoAudio();
+                this.usingMicrophone = false;
+            }
             
             this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
             this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
@@ -50,6 +59,60 @@ class BaseVisualizer {
             console.error('Error initializing audio:', error);
             throw new Error(`Audio initialization failed: ${error.message}`);
         }
+    }
+
+    /**
+     * Create demo audio for testing without microphone
+     */
+    createDemoAudio() {
+        // Create multiple oscillators for rich demo sound
+        this.demoOscillators = [];
+        this.demoGain = this.audioContext.createGain();
+        this.demoGain.gain.value = 0.1;
+        this.demoGain.connect(this.analyser);
+        
+        // Create oscillators with different frequencies
+        const frequencies = [220, 330, 440, 660];
+        frequencies.forEach((freq, index) => {
+            const oscillator = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+            oscillator.type = 'sine';
+            gain.gain.value = 0.25;
+            
+            oscillator.connect(gain);
+            gain.connect(this.demoGain);
+            
+            this.demoOscillators.push({ oscillator, gain, baseFreq: freq });
+        });
+        
+        // Start demo animation
+        this.startDemoAnimation();
+    }
+
+    /**
+     * Start demo animation with varying frequencies
+     */
+    startDemoAnimation() {
+        if (!this.demoOscillators) return;
+        
+        this.demoOscillators.forEach(({ oscillator }) => {
+            oscillator.start();
+        });
+        
+        // Animate frequencies
+        this.demoAnimationId = setInterval(() => {
+            const time = this.audioContext.currentTime;
+            this.demoOscillators.forEach(({ oscillator, gain, baseFreq }, index) => {
+                const variation = Math.sin(time * (0.5 + index * 0.3)) * 100;
+                const newFreq = baseFreq + variation;
+                oscillator.frequency.setValueAtTime(newFreq, time);
+                
+                const gainVariation = (Math.sin(time * (0.8 + index * 0.2)) + 1) * 0.25;
+                gain.gain.setValueAtTime(gainVariation, time);
+            });
+        }, 100);
     }
 
     /**
@@ -183,6 +246,21 @@ class BaseVisualizer {
      */
     destroy() {
         this.stop();
+        
+        // Stop demo audio if running
+        if (this.demoAnimationId) {
+            clearInterval(this.demoAnimationId);
+        }
+        
+        if (this.demoOscillators) {
+            this.demoOscillators.forEach(({ oscillator }) => {
+                try {
+                    oscillator.stop();
+                } catch (e) {
+                    // Oscillator might already be stopped
+                }
+            });
+        }
         
         if (this.audioContext && this.audioContext.state !== 'closed') {
             this.audioContext.close();

@@ -52,9 +52,19 @@ class RoseVisualizer extends BaseVisualizer {
         
         // Create gradient for petal
         const gradient = this.ctx.createRadialGradient(0, 0, 0, 0, 0, petalLength);
-        gradient.addColorStop(0, color.replace('hsla', 'hsla').replace(')', `, ${opacity})`));
-        gradient.addColorStop(0.7, color.replace('hsla', 'hsla').replace(')', `, ${opacity * 0.6})`));
-        gradient.addColorStop(1, color.replace('hsla', 'hsla').replace(')', `, 0)`));
+        
+        // Parse HSLA color and create variations
+        const colorMatch = color.match(/hsla?\(([^)]+)\)/);
+        if (colorMatch) {
+            const [h, s, l, a = 1] = colorMatch[1].split(',').map(v => parseFloat(v.trim().replace('%', '')));
+            gradient.addColorStop(0, `hsla(${h}, ${s}%, ${l}%, ${opacity * a})`);
+            gradient.addColorStop(0.7, `hsla(${h}, ${s}%, ${l}%, ${opacity * 0.6 * a})`);
+            gradient.addColorStop(1, `hsla(${h}, ${s}%, ${l}%, 0)`);
+        } else {
+            // Fallback to solid color
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, 'transparent');
+        }
         
         this.ctx.beginPath();
         this.ctx.ellipse(0, 0, petalWidth, petalLength, 0, 0, 2 * Math.PI);
@@ -62,7 +72,13 @@ class RoseVisualizer extends BaseVisualizer {
         this.ctx.fill();
         
         // Add stroke for definition
-        this.ctx.strokeStyle = color.replace('hsla', 'hsla').replace(')', `, ${opacity * 0.8})`);
+        const strokeColorMatch = color.match(/hsla?\(([^)]+)\)/);
+        if (strokeColorMatch) {
+            const [h, s, l, a = 1] = strokeColorMatch[1].split(',').map(v => parseFloat(v.trim().replace('%', '')));
+            this.ctx.strokeStyle = `hsla(${h}, ${s}%, ${l}%, ${opacity * 0.8 * a})`;
+        } else {
+            this.ctx.strokeStyle = color;
+        }
         this.ctx.lineWidth = 1;
         this.ctx.stroke();
         
@@ -81,8 +97,8 @@ class RoseVisualizer extends BaseVisualizer {
             this.centerX, this.centerY, radius * 2
         );
         gradient.addColorStop(0, color);
-        gradient.addColorStop(0.5, color.replace(')', ', 0.8)'));
-        gradient.addColorStop(1, color.replace(')', ', 0)'));
+        gradient.addColorStop(0.5, color.replace(/,\s*[\d.]+\)$/, ', 0.8)'));
+        gradient.addColorStop(1, color.replace(/,\s*[\d.]+\)$/, ', 0)'));
         
         this.ctx.beginPath();
         this.ctx.arc(this.centerX, this.centerY, radius, 0, 2 * Math.PI);
@@ -92,7 +108,7 @@ class RoseVisualizer extends BaseVisualizer {
         // Add inner glow
         this.ctx.beginPath();
         this.ctx.arc(this.centerX, this.centerY, radius * 0.5, 0, 2 * Math.PI);
-        this.ctx.fillStyle = color.replace(')', ', 0.9)');
+        this.ctx.fillStyle = color.replace(/,\s*[\d.]+\)$/, ', 0.9)');
         this.ctx.fill();
     }
 
@@ -133,27 +149,24 @@ class RoseVisualizer extends BaseVisualizer {
      * Main render method
      */
     render() {
-        // Clear canvas with fade effect
-        this.ctx.fillStyle = 'rgba(1, 4, 0, 0.1)';
+        // Clear canvas with fade effect for trails
+        this.ctx.fillStyle = 'rgba(1, 4, 0, 0.05)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
         if (!this.analyser) return;
         
         // Get audio data
         const volume = this.getAverageFrequency();
-        const color = this.getFrequencyColor(0.8);
+        const color = this.getFrequencyColor(0.9);
         
-        // Update time
+        // Update time and adaptive parameters
         this.time += 1;
+        this.updatePetalCount();
         
-        // Draw rose and center
+        // Draw components
+        this.drawFrequencySpectrum();
         this.drawRose(color, volume);
         this.drawCenterObject(color, volume);
-        
-        // Draw frequency spectrum visualization (optional)
-        if (volume > 0.1) {
-            this.drawFrequencySpectrum();
-        }
     }
 
     /**
@@ -197,29 +210,5 @@ class RoseVisualizer extends BaseVisualizer {
     updatePetalCount() {
         const volume = this.getAverageFrequency();
         this.numPetals = Math.floor(8 + volume * 12); // 8-20 petals based on volume
-    }
-
-    /**
-     * Enhanced render with adaptive features
-     */
-    render() {
-        // Clear canvas with fade effect for trails
-        this.ctx.fillStyle = 'rgba(1, 4, 0, 0.05)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        if (!this.analyser) return;
-        
-        // Get audio data
-        const volume = this.getAverageFrequency();
-        const color = this.getFrequencyColor(0.9);
-        
-        // Update time and adaptive parameters
-        this.time += 1;
-        this.updatePetalCount();
-        
-        // Draw components
-        this.drawFrequencySpectrum();
-        this.drawRose(color, volume);
-        this.drawCenterObject(color, volume);
     }
 }

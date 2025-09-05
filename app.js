@@ -122,7 +122,11 @@ class AudioVisualizerApp {
             // Start the current visualizer
             this.currentVisualizer.start();
             
-            this.updateStatus('Audio visualization active - use number keys 1-2 to switch visualizers');
+            if (this.currentVisualizer.usingMicrophone) {
+                this.updateStatus('Audio visualization active - use number keys 1-2 to switch visualizers');
+            } else {
+                this.updateStatus('Demo mode active (microphone not available) - use number keys 1-2 to switch visualizers');
+            }
             
         } catch (error) {
             console.error('Error starting audio:', error);
@@ -229,8 +233,8 @@ class AudioVisualizerApp {
     }
 }
 
-// Initialize application when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize application when DOM is loaded or immediately if already loaded
+function initApp() {
     const app = new AudioVisualizerApp();
     
     // Cleanup on page unload
@@ -240,7 +244,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Make app globally available for debugging
     window.audioVisualizerApp = app;
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    // DOM is already loaded
+    initApp();
+}
 
 // Service Worker registration for offline support (if needed)
 if ('serviceWorker' in navigator) {
