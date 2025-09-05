@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Visualizer Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Audio Visualizer Demo</h1>
+            <p>Experience audio through visual art</p>
+        </header>
+
+        <nav class="visualizer-controls">
+            <button id="startButton" class="start-btn">🎵 Start Audio</button>
+            <div class="tool-selector">
+                <button class="tool-btn active" data-tool="rose">🌹 Rose Visualizer</button>
+                <button class="tool-btn" data-tool="sphere">🌐 3D Sphere</button>
+            </div>
+        </nav>
+
+        <main class="visualizer-container">
+            <!-- Rose Visualizer Canvas -->
+            <canvas id="roseCanvas" class="visualizer rose-visualizer active" width="800" height="600"></canvas>
+            
+            <!-- 3D Sphere Visualizer Container -->
+            <div id="sphereContainer" class="visualizer sphere-visualizer"></div>
+        </main>
+
+        <footer class="info-panel">
+            <div class="status" id="statusDisplay">Click "Start Audio" to begin visualization</div>
+            <div class="controls">
+                <label for="sensitivity">Sensitivity: <span id="sensitivityValue">50</span>%</label>
+                <input type="range" id="sensitivity" min="10" max="200" value="50">
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Try to load Three.js from multiple sources
+        function loadThreeJS() {
+            const sources = [
+                'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+                'https://unpkg.com/three@0.128.0/build/three.min.js',
+                'libs/three.min.js'
+            ];
+            
+            function trySource(index) {
+                if (index >= sources.length) {
+                    console.warn('Could not load Three.js from any source, using fallback');
+                    loadApp();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = sources[index];
+                script.onload = loadApp;
+                script.onerror = () => trySource(index + 1);
+                document.head.appendChild(script);
+            }
+            
+            trySource(0);
+        }
+        
+        function loadApp() {
+            // Load application scripts in order synchronously
+            const scripts = [
+                'visualizers/base-visualizer.js',
+                'visualizers/rose-visualizer.js', 
+                'visualizers/sphere-visualizer.js',
+                'app.js'
+            ];
+            
+            function loadScript(index) {
+                if (index >= scripts.length) {
+                    console.log('All scripts loaded successfully');
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = scripts[index];
+                script.onload = () => loadScript(index + 1);
+                script.onerror = () => {
+                    console.error('Failed to load:', scripts[index]);
+                    loadScript(index + 1); // Continue even if one fails
+                };
+                document.head.appendChild(script);
+            }
+            
+            loadScript(0);
+        }
+        
+        loadThreeJS();
+    </script>
+</body>
+</html>
