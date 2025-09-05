@@ -14,10 +14,24 @@
         </header>
 
         <nav class="visualizer-controls">
+            <!-- Audio Source Selection -->
+            <div class="audio-source-controls">
+                <div class="source-selector">
+                    <button class="source-btn active" data-source="microphone">🎤 Microphone</button>
+                    <button class="source-btn" data-source="file">📁 Audio File</button>
+                </div>
+                <div class="file-upload-area" id="fileUploadArea" style="display: none;">
+                    <p>Click to select audio file or drag & drop</p>
+                    <p style="font-size: 0.8em; opacity: 0.7;">Supports: MP3, WAV, OGG, M4A</p>
+                    <input type="file" id="fileInput" accept="audio/*">
+                </div>
+            </div>
+            
             <button id="startButton" class="start-btn">🎵 Start Audio</button>
             <div class="tool-selector">
-                <button class="tool-btn active" data-tool="rose">🌹 Rose Visualizer</button>
-                <button class="tool-btn" data-tool="sphere">🌐 3D Sphere</button>
+                <button class="tool-btn active" data-tool="rose">🌹 Rose</button>
+                <button class="tool-btn" data-tool="sphere">🌐 Sphere</button>
+                <button class="tool-btn" data-tool="fractal">🔬 Fractal</button>
             </div>
         </nav>
 
@@ -27,6 +41,9 @@
             
             <!-- 3D Sphere Visualizer Container -->
             <div id="sphereContainer" class="visualizer sphere-visualizer"></div>
+            
+            <!-- Fractal Visualizer Canvas -->
+            <canvas id="fractalCanvas" class="visualizer fractal-visualizer" width="800" height="600"></canvas>
         </main>
 
         <footer class="info-panel">
@@ -71,6 +88,7 @@
                 'visualizers/base-visualizer.js',
                 'visualizers/rose-visualizer.js', 
                 'visualizers/sphere-visualizer.js',
+                'visualizers/fractal-visualizer.js',
                 'app.js'
             ];
             
